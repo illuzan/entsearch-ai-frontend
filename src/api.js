@@ -9,10 +9,10 @@ const api = axios.create({
 });
 
 // Call search API
-export const searchQuery = async (query) => {
-  const response = await api.post("/sec-query", { query });
-  // const response = await api.post(`/sec-query?query=${query}`);
-  return response.data; // Adjust based on your API response
-};
+// export const searchQuery = async (query) => {
+//   const response = await api.post("/sec-query", { query });
+//   // const response = await api.post(`/sec-query?query=${query}`);
+//   return response.data; // Adjust based on your API response
+// };
 
 export default api;
