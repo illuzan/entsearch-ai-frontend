@@ -74,17 +74,25 @@
 // }
 
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMsal } from "@azure/msal-react";
 import ChatMessage from "../components/ChatMessage";
 import ChatInput from "../components/ChatInput";
-import api from "../api";
+import UserProfile from "../components/UserProfile";
+import api, { setMsalInstance } from "../api";
 
 export default function Chat() {
+  const { instance, accounts } = useMsal();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showScroll, setShowScroll] = useState(false);
-  const navigate = useNavigate();
   const chatContainerRef = useRef(null);
+
+  // Initialize MSAL instance for token refresh
+  useEffect(() => {
+    if (instance) {
+      setMsalInstance(instance);
+    }
+  }, [instance]);
 
   // Load messages from localStorage on mount
   useEffect(() => {
@@ -102,11 +110,15 @@ export default function Chat() {
     setLoading(true);
 
     try {
-      const res = await api.post("/sec-query", { query: text });
-      setMessages((prev) => [...prev, { sender: "bot", text: res.data.answer }]);
+      // API call with MSAL token (attached via interceptor in api.js)
+      const res = await api.post("/search", { prompt: text });
+      setMessages((prev) => [...prev, { sender: "bot", text: res.data.message }]);
     } catch (err) {
       console.error(err);
-      setMessages((prev) => [...prev, { sender: "bot", text: "Something went wrong!" }]);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Something went wrong! Please try again." },
+      ]);
     }
 
     setLoading(false);
@@ -138,7 +150,7 @@ export default function Chat() {
   return (
     <div className="w-full flex flex-col items-stretch p-4 space-y-3 h-screen relative">
       {/* Top navbar */}
-      <div className="flex items-center justify-between p-2 bg-gray-100 border-b border-gray-300 relative">
+      <div className="flex items-center justify-between p-3 bg-gray-100 border-b border-gray-300">
         {/* Left spacer */}
         <div className="w-1/3"></div>
 
@@ -147,20 +159,9 @@ export default function Chat() {
           Entsearch-AI
         </div>
 
-        {/* Right buttons */}
-        <div className="flex justify-end w-1/3 space-x-2">
-          <button
-            className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            onClick={() => navigate("/login")}
-          >
-            Login
-          </button>
-          <button
-            className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600"
-            onClick={() => navigate("/signup")}
-          >
-            Signup
-          </button>
+        {/* Right: User Profile */}
+        <div className="flex justify-end w-1/3">
+          <UserProfile />
         </div>
       </div>
 

@@ -1,17 +1,19 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+import { useIsAuthenticated } from "@azure/msal-react";
+import MSALLogin from "./pages/MSALLogin";
 import Chat from "./pages/Chat";
 
 function App() {
-  const isLoggedIn = !!localStorage.getItem("token");
+  const isAuthenticated = useIsAuthenticated();
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={isLoggedIn ? <Chat /> : <Navigate to="/login" />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/"
+          element={isAuthenticated ? <Chat /> : <Navigate to="/login" />}
+        />
+        <Route path="/login" element={<MSALLogin />} />
       </Routes>
     </BrowserRouter>
   );
