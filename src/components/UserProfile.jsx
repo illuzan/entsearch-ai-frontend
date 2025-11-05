@@ -45,7 +45,7 @@ export default function UserProfile() {
         className="flex items-center gap-3 px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg border border-blue-200 transition-all duration-200 w-full cursor-pointer group"
       >
         {/* User Avatar */}
-        <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-linear-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
           {account.name?.charAt(0).toUpperCase() || "U"}
         </div>
 
@@ -61,7 +61,7 @@ export default function UserProfile() {
 
         {/* Chevron Icon */}
         <svg
-          className={`w-4 h-4 text-slate-600 transition-transform duration-200 flex-shrink-0 ${
+          className={`w-4 h-4 text-slate-600 transition-transform duration-200 shrink-0 ${
             isOpen ? "rotate-180" : ""
           }`}
           fill="none"

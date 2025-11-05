@@ -19,22 +19,22 @@ export default function Signup() {
         <input
           type="text"
           placeholder="Name"
-          className="border p-2 w-full mb-3 rounded"
+          className="border p-2 w-full mb-3 rounded-sm"
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
         <input
           type="email"
           placeholder="Email"
-          className="border p-2 w-full mb-3 rounded"
+          className="border p-2 w-full mb-3 rounded-sm"
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
         <input
           type="password"
           placeholder="Password"
-          className="border p-2 w-full mb-3 rounded"
+          className="border p-2 w-full mb-3 rounded-sm"
           onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
-        <button className="bg-blue-500 text-white w-full py-2 rounded">Signup</button>
+        <button className="bg-blue-500 text-white w-full py-2 rounded-sm">Signup</button>
         <p className="text-center text-sm mt-2">
           Already have an account? <Link to="/login" className="text-blue-500">Login</Link>
         </p>

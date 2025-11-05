@@ -58,8 +58,8 @@ export default function ChatMessage({ sender, text }) {
       <div
         className={`px-3 md:px-5 py-2 md:py-3 rounded-2xl md:rounded-3xl message-bubble ${
           isUser
-            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white max-w-[85%] md:max-w-[65%] rounded-br-none shadow-md hover:shadow-lg"
-            : "bg-slate-100 text-slate-900 max-w-[90%] md:max-w-[70%] rounded-bl-none shadow-sm hover:shadow-md border border-slate-200"
+            ? "bg-linear-to-r from-blue-500 to-blue-600 text-white max-w-[85%] md:max-w-[65%] rounded-br-none shadow-md hover:shadow-lg"
+            : "bg-slate-100 text-slate-900 max-w-[90%] md:max-w-[70%] rounded-bl-none shadow-xs hover:shadow-md border border-slate-200"
         }`}
       >
         <span className={`text-xs md:text-sm font-medium ${isUser ? "block mb-1 opacity-80" : "hidden"}`}>
@@ -78,9 +78,9 @@ export default function ChatMessage({ sender, text }) {
               li: ({ node, ...props }) => <li {...props} className="mb-1" />,
               code: ({ node, inline, ...props }) => (
                 inline ? (
-                  <code {...props} className={`px-1.5 py-0.5 rounded text-sm font-mono ${isUser ? "bg-blue-400" : "bg-slate-200"}`} />
+                  <code {...props} className={`px-1.5 py-0.5 rounded-sm text-sm font-mono ${isUser ? "bg-blue-400" : "bg-slate-200"}`} />
                 ) : (
-                  <pre {...props} className={`p-2 rounded mb-2 overflow-x-auto text-xs font-mono ${isUser ? "bg-blue-400" : "bg-slate-200"}`} />
+                  <pre {...props} className={`p-2 rounded-sm mb-2 overflow-x-auto text-xs font-mono ${isUser ? "bg-blue-400" : "bg-slate-200"}`} />
                 )
               ),
               blockquote: ({ node, ...props }) => <blockquote {...props} className="border-l-4 pl-3 mb-2 italic opacity-75" />,

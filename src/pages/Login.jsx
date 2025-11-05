@@ -20,16 +20,16 @@ export default function Login() {
         <input
           type="email"
           placeholder="Email"
-          className="border p-2 w-full mb-3 rounded"
+          className="border p-2 w-full mb-3 rounded-sm"
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
         <input
           type="password"
           placeholder="Password"
-          className="border p-2 w-full mb-3 rounded"
+          className="border p-2 w-full mb-3 rounded-sm"
           onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
-        <button className="bg-blue-500 text-white w-full py-2 rounded">Login</button>
+        <button className="bg-blue-500 text-white w-full py-2 rounded-sm">Login</button>
         <p className="text-center text-sm mt-2">
           Don’t have an account? <Link to="/signup" className="text-blue-500">Signup</Link>
         </p>

@@ -235,12 +235,12 @@ export default function Chat() {
         sidebarOpen
           ? "w-full md:w-64 translate-x-0"
           : "w-full md:w-0 -translate-x-full md:translate-x-0"
-      } fixed md:static top-0 left-0 bottom-0 z-40 bg-blue-50 border-r border-blue-100 flex flex-col transition-all duration-300 overflow-hidden shadow-lg md:shadow-sm`}>
+      } fixed md:static top-0 left-0 bottom-0 z-40 bg-blue-50 border-r border-blue-100 flex flex-col transition-all duration-300 overflow-hidden shadow-lg md:shadow-xs`}>
         {/* Sidebar header */}
         <div className="p-4 border-b border-blue-100 flex items-center justify-between gap-2">
           <button
             onClick={handleNewChat}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg text-sm"
+            className="flex-1 px-4 py-2 bg-linear-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg text-sm"
           >
             + New Chat
           </button>
@@ -260,7 +260,7 @@ export default function Chat() {
           <input
             type="text"
             placeholder="Search your threads..."
-            className="w-full px-3 py-2 rounded-lg border border-blue-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 shadow-sm"
+            className="w-full px-3 py-2 rounded-lg border border-blue-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 shadow-xs"
           />
         </div>
 
@@ -301,7 +301,7 @@ export default function Chat() {
         </div>
 
         {/* User profile in sidebar - with better spacing */}
-        <div className="p-4 border-t border-blue-100 bg-gradient-to-b from-transparent to-blue-50 shadow-sm">
+        <div className="p-4 border-t border-blue-100 bg-linear-to-b from-transparent to-blue-50 shadow-xs">
           <UserProfile />
         </div>
       </div>
@@ -309,11 +309,11 @@ export default function Chat() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col w-full md:w-auto">
         {/* Top navbar */}
-        <div className="flex items-center justify-between px-3 md:px-6 py-3 md:py-4 bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500 shadow-lg border-b border-blue-300 gap-2">
+        <div className="flex items-center justify-between px-3 md:px-6 py-3 md:py-4 bg-linear-to-r from-blue-500 via-blue-400 to-blue-500 shadow-lg border-b border-blue-300 gap-2">
           {/* Toggle sidebar - visible on mobile and desktop */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-white hover:bg-blue-400 p-2 rounded-lg transition-all duration-200 hover:shadow-md flex-shrink-0"
+            className="text-white hover:bg-blue-400 p-2 rounded-lg transition-all duration-200 hover:shadow-md shrink-0"
           >
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -327,12 +327,12 @@ export default function Chat() {
           </div>
 
           {/* Right spacer */}
-          <div className="w-8 md:w-10 flex-shrink-0"></div>
+          <div className="w-8 md:w-10 shrink-0"></div>
         </div>
 
         {/* Chat messages container */}
         <div
-          className="flex-1 overflow-y-auto px-3 md:px-8 py-4 md:py-8 space-y-3 md:space-y-4 smooth-scroll bg-gradient-to-b from-blue-50 via-white to-blue-50"
+          className="flex-1 overflow-y-auto px-3 md:px-8 py-4 md:py-8 space-y-3 md:space-y-4 smooth-scroll bg-linear-to-b from-blue-50 via-white to-blue-50"
           ref={chatContainerRef}
         >
           {/* Empty state */}
@@ -380,7 +380,7 @@ export default function Chat() {
         )}
 
         {/* Chat input */}
-        <div className="px-3 md:px-8 py-4 md:py-6 bg-white border-t border-blue-100 shadow-sm">
+        <div className="px-3 md:px-8 py-4 md:py-6 bg-white border-t border-blue-100 shadow-xs">
           <ChatInput onSend={handleSend} />
         </div>
       </div>
