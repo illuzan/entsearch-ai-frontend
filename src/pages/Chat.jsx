@@ -1,78 +1,3 @@
-// import { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import ChatMessage from "../components/ChatMessage";
-// import ChatInput from "../components/ChatInput";
-// import api from "../api";
-
-// export default function Chat() {
-//   const [messages, setMessages] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const navigate = useNavigate();
-
-//   // const handleSend = async (text, sender) => {
-//   //   setLoading(true);
-//   //   setMessages((prev) => [...prev, { sender, text }]);
-//   //   setLoading(false);
-
-//   // };
-
-//   const handleSend = async (text, sender) => {
-//     // show user message
-//     setMessages((prev) => [...prev, { sender, text }]);
-//     setLoading(true);
-
-//     try {
-//       // call backend API
-//       const res = await api.post("/sec-query", { query: text });
-
-//       // add bot/AI response
-//       setMessages((prev) => [
-//         ...prev,
-//         { sender: "bot", text: res.data.answer },
-//       ]);
-//     } catch (err) {
-//       console.error(err);
-//       setMessages((prev) => [
-//         ...prev,
-//         { sender: "bot", text: "Something went wrong!" },
-//       ]);
-//     }
-
-//     setLoading(false);
-//   };
-
-//   return (
-//     <div className="w-full flex flex-col items-stretch p-4 space-y-3">
-//       {/* Top buttons */}
-//       <div className="flex justify-end p-2 space-x-2 bg-gray-100 border-b border-gray-300">
-//         <button
-//           className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-//           onClick={() => navigate("/login")}
-//         >
-//           Login
-//         </button>
-//         <button
-//           className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600"
-//           onClick={() => navigate("/signup")}
-//         >
-//           Signup
-//         </button>
-//       </div>
-
-//       {/* Chat messages */}
-//       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-//         {messages.map((msg, i) => (
-//           <ChatMessage key={i} sender={msg.sender} text={msg.text} />
-//         ))}
-//         {loading && <p className="text-center text-gray-400">Thinking...</p>}
-//       </div>
-
-//       {/* Chat input */}
-//       <ChatInput onSend={handleSend} />
-//     </div>
-//   );
-// }
-
 import { useState, useRef, useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
 import ChatMessage from "../components/ChatMessage";
@@ -85,6 +10,7 @@ export default function Chat() {
   const [threads, setThreads] = useState([]);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [threadsLoading, setThreadsLoading] = useState(true);
   const [showScroll, setShowScroll] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -97,18 +23,38 @@ export default function Chat() {
     }
   }, [instance]);
 
-  // Load threads and messages from localStorage on mount
+  // Fetch threads from backend API on mount
   useEffect(() => {
-    const savedThreads = localStorage.getItem("chatThreads");
-    if (savedThreads) {
-      const parsed = JSON.parse(savedThreads);
-      setThreads(parsed);
-      // Load the first thread's messages by default
-      if (parsed.length > 0) {
-        setSelectedThreadId(parsed[0].id);
-        setMessages(parsed[0].messages || []);
+    const fetchThreads = async () => {
+      setThreadsLoading(true);
+      try {
+        const response = await api.get("/threads");
+        if (response.data.success && response.data.threads) {
+          // Transform API response to match the thread structure
+          const fetchedThreads = response.data.threads.map((thread) => ({
+            id: thread.id,
+            title: `Thread ${thread.id.substring(7, 15)}`, // Use shortened thread ID as title
+            messages: [],
+            createdAt: thread.created_at,
+          }));
+
+          // Sort threads by creation date (newest first)
+          fetchedThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+          setThreads(fetchedThreads);
+          // Load the first thread by default
+          if (fetchedThreads.length > 0) {
+            setSelectedThreadId(fetchedThreads[0].id);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch threads:", error);
+      } finally {
+        setThreadsLoading(false);
       }
-    }
+    };
+
+    fetchThreads();
   }, []);
 
   // Save threads to localStorage whenever they change
@@ -266,7 +212,24 @@ export default function Chat() {
 
         {/* Threads list */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          <div className="text-xs font-semibold text-blue-600 uppercase px-3 py-2 tracking-wide">Today</div>
+          <div className="text-xs font-semibold text-blue-600 uppercase px-3 py-2 tracking-wide">All Threads</div>
+
+          {/* Loading state */}
+          {threadsLoading ? (
+            <div className="flex flex-col gap-3 p-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="p-3 rounded-lg bg-blue-100 animate-pulse">
+                  <div className="h-4 bg-blue-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-blue-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : threads.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <p className="text-sm">No threads found</p>
+            </div>
+          ) : (
+            <>
           {threads.map((thread) => (
             <div
               key={thread.id}
@@ -281,7 +244,14 @@ export default function Chat() {
                 <div className="flex-1 truncate">
                   <p className="text-sm font-medium truncate">{thread.title}</p>
                   <p className="text-xs opacity-60 mt-1">
-                    {thread.messages?.length || 0} messages
+                    {thread.createdAt
+                      ? new Date(thread.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'Unknown date'}
                   </p>
                 </div>
                 <button
@@ -298,6 +268,8 @@ export default function Chat() {
               </div>
             </div>
           ))}
+            </>
+          )}
         </div>
 
         {/* User profile in sidebar - with better spacing */}
