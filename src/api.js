@@ -26,7 +26,7 @@ api.interceptors.request.use(
       if (!token && msalInstance) {
         try {
           const response = await msalInstance.acquireTokenSilent({
-            scopes: ["api://63163e74-d327-4cdc-8df2-d0934feb082f/access_as_user"],
+            scopes: ["api://badcff2b-632b-4a5b-ae01-af2c9243a164/access_as_user"],
           });
           token = response.accessToken;
           sessionStorage.setItem("msal_access_token", token);

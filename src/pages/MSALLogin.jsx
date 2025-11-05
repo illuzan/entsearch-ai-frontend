@@ -41,7 +41,7 @@ export default function MSALLogin() {
         {/* Logo/Title */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Entsearch-AI
+            Agentic AI
           </h1>
           <p className="text-gray-600">Sign in with Microsoft</p>
         </div>

@@ -19,5 +19,5 @@ export const loginRequest = {
 
 // Scopes for the backend API
 export const apiRequest = {
-  scopes: ["api://63163e74-d327-4cdc-8df2-d0934feb082f/access_as_user"], // Replace with your backend API scope
+  scopes: ["api://badcff2b-632b-4a5b-ae01-af2c9243a164/access_as_user"], // Replace with your backend API scope
 };
