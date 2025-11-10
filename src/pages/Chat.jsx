@@ -65,6 +65,7 @@ export default function Chat() {
       // Clear messages immediately when switching threads
       setMessages([]);
       setLoading(true);
+      setIsNewThreadLoading(true)
 
       const fetchMessages = async () => {
         try {
@@ -84,6 +85,7 @@ export default function Chat() {
           setMessages([]);
         } finally {
           setLoading(false);
+          setIsNewThreadLoading(false)
         }
       };
 
@@ -148,8 +150,8 @@ export default function Chat() {
     setMessages(newMessages);
 
     // Track if this is a new thread (selectedThreadId is null)
-    const isNewThread = selectedThreadId === null;
-    setIsNewThreadLoading(isNewThread);
+    // const isNewThread = selectedThreadId === null;
+    // setIsNewThreadLoading(isNewThread);
     setLoading(true);
 
     try {
