@@ -14,6 +14,8 @@ export default function Chat() {
   const [showScroll, setShowScroll] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isNewThreadLoading, setIsNewThreadLoading] = useState(false);
   const chatContainerRef = useRef(null);
 
   // Initialize MSAL instance for token refresh
@@ -57,73 +59,142 @@ export default function Chat() {
     fetchThreads();
   }, []);
 
+  // Fetch messages when a thread is selected
+  useEffect(() => {
+    if (selectedThreadId) {
+      // Clear messages immediately when switching threads
+      setMessages([]);
+      setLoading(true);
+
+      const fetchMessages = async () => {
+        try {
+          const response = await api.get(`/threads/${selectedThreadId}/messages`);
+          if (response.data.success && response.data.messages) {
+            // Transform API messages to display format
+            const formattedMessages = response.data.messages.map((msg) => ({
+              sender: msg.role === "user" ? "user" : "bot",
+              text: msg.content,
+              id: msg.id,
+              createdAt: msg.created_at,
+            }));
+            setMessages(formattedMessages);
+          }
+        } catch (error) {
+          console.error("Failed to fetch thread messages:", error);
+          setMessages([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchMessages();
+    } else {
+      // Clear messages when no thread is selected
+      setMessages([]);
+    }
+  }, [selectedThreadId]);
+
   // Save threads to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("chatThreads", JSON.stringify(threads));
   }, [threads]);
 
-  // Create a new chat thread
+  // Create a new chat thread locally - actual thread will be created on backend when first message is sent
   const handleNewChat = () => {
     const newThread = {
-      id: Date.now().toString(),
+      id: null, // Thread ID will be created on backend when first message is sent
       title: "New Chat",
       messages: [],
       createdAt: new Date().toISOString(),
     };
     setThreads((prev) => [newThread, ...prev]);
-    setSelectedThreadId(newThread.id);
+    setSelectedThreadId(null);
     setMessages([]);
   };
 
-  // Select a thread
+  // Select a thread (messages will be fetched by useEffect)
   const handleSelectThread = (threadId) => {
-    const thread = threads.find((t) => t.id === threadId);
-    if (thread) {
-      setSelectedThreadId(threadId);
-      setMessages(thread.messages || []);
-    }
+    setSelectedThreadId(threadId);
   };
 
-  // Delete a thread
-  const handleDeleteThread = (threadId) => {
-    setThreads((prev) => prev.filter((t) => t.id !== threadId));
-    if (selectedThreadId === threadId) {
-      if (threads.length > 1) {
-        const remainingThread = threads.find((t) => t.id !== threadId);
-        setSelectedThreadId(remainingThread.id);
-        setMessages(remainingThread.messages || []);
-      } else {
-        setSelectedThreadId(null);
-        setMessages([]);
+  // Delete a thread from backend and local state
+  const handleDeleteThread = async (threadId) => {
+    try {
+      // Call backend to delete the thread
+      await api.delete(`/threads/${threadId}`);
+
+      // Remove from local state
+      setThreads((prev) => prev.filter((t) => t.id !== threadId));
+
+      if (selectedThreadId === threadId) {
+        if (threads.length > 1) {
+          const remainingThread = threads.find((t) => t.id !== threadId);
+          setSelectedThreadId(remainingThread.id);
+          setMessages(remainingThread.messages || []);
+        } else {
+          setSelectedThreadId(null);
+          setMessages([]);
+        }
       }
+    } catch (error) {
+      console.error("Failed to delete thread:", error);
+      // Still remove from local state even if backend fails
+      setThreads((prev) => prev.filter((t) => t.id !== threadId));
     }
   };
 
   const handleSend = async (text, sender) => {
     const newMessages = [...messages, { sender, text }];
     setMessages(newMessages);
+
+    // Track if this is a new thread (selectedThreadId is null)
+    const isNewThread = selectedThreadId === null;
+    setIsNewThreadLoading(isNewThread);
     setLoading(true);
 
     try {
       // API call with MSAL token (attached via interceptor in api.js)
-      const res = await api.post("/search", { prompt: text });
+      // Include thread_id in the request body (null for new threads)
+      const res = await api.post("/search", {
+        prompt: text,
+        thread_id: selectedThreadId
+      });
+
       const botMessage = { sender: "bot", text: res.data.message };
       const updatedMessages = [...newMessages, botMessage];
       setMessages(updatedMessages);
 
-      // Update thread with new messages and title if it's the first message
-      setThreads((prev) =>
-        prev.map((thread) => {
-          if (thread.id === selectedThreadId) {
+      // Get the thread_id from response (either existing or newly created)
+      const threadId = res.data.thread_id || selectedThreadId;
+
+      // Update thread with new messages, thread_id, and title if it's the first message
+      setThreads((prev) => {
+        let foundThread = false;
+        const updated = prev.map((thread) => {
+          // Match either by exact ID or by the first unsaved new chat thread
+          const isMatch = thread.id === selectedThreadId ||
+                         (selectedThreadId === null && !foundThread && thread.id === null && thread.title === "New Chat");
+
+          if (isMatch) {
+            foundThread = true;
+            const userMessageText = text.substring(0, 30) + (text.length > 30 ? "..." : "");
             return {
               ...thread,
+              id: threadId, // Update thread ID if it was null
               messages: updatedMessages,
-              title: thread.title === "New Chat" ? text.substring(0, 30) + (text.length > 30 ? "..." : "") : thread.title,
+              // Update title: if it was "New Chat", use the user message; otherwise keep the current title
+              title: thread.title === "New Chat" ? userMessageText : thread.title,
             };
           }
           return thread;
-        })
-      );
+        });
+        return updated;
+      });
+
+      // Update selectedThreadId if it was null (for new threads)
+      if (selectedThreadId === null) {
+        setSelectedThreadId(threadId);
+      }
     } catch (err) {
       console.error(err);
       const errorMessage = { sender: "bot", text: "Something went wrong! Please try again." };
@@ -131,20 +202,27 @@ export default function Chat() {
       setMessages(updatedMessages);
 
       // Update thread with error message
-      setThreads((prev) =>
-        prev.map((thread) => {
-          if (thread.id === selectedThreadId) {
+      setThreads((prev) => {
+        let foundThread = false;
+        const updated = prev.map((thread) => {
+          const isMatch = thread.id === selectedThreadId ||
+                         (selectedThreadId === null && !foundThread && thread.id === null && thread.title === "New Chat");
+
+          if (isMatch) {
+            foundThread = true;
             return {
               ...thread,
               messages: updatedMessages,
             };
           }
           return thread;
-        })
-      );
+        });
+        return updated;
+      });
     }
 
     setLoading(false);
+    setIsNewThreadLoading(false);
   };
 
   // Show scroll arrow if chat overflows
@@ -206,6 +284,8 @@ export default function Chat() {
           <input
             type="text"
             placeholder="Search your threads..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-blue-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 shadow-xs"
           />
         </div>
@@ -224,13 +304,20 @@ export default function Chat() {
                 </div>
               ))}
             </div>
-          ) : threads.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              <p className="text-sm">No threads found</p>
-            </div>
-          ) : (
-            <>
-          {threads.map((thread) => (
+          ) : (() => {
+            const filteredThreads = threads.filter((thread) =>
+              thread.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              thread.id.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            return filteredThreads.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <p className="text-sm">
+                  {searchQuery ? "No threads match your search" : "No threads found"}
+                </p>
+              </div>
+            ) : (
+              <>
+                {filteredThreads.map((thread) => (
             <div
               key={thread.id}
               onClick={() => handleSelectThread(thread.id)}
@@ -267,9 +354,10 @@ export default function Chat() {
                 </button>
               </div>
             </div>
-          ))}
-            </>
-          )}
+                ))}
+              </>
+            );
+          })()}
         </div>
 
         {/* User profile in sidebar - with better spacing */}
@@ -308,13 +396,26 @@ export default function Chat() {
           ref={chatContainerRef}
         >
           {/* Empty state */}
-          {messages.length === 0 && !loading && (
+          {messages.length === 0 && !loading && selectedThreadId && (
+            <div className="h-full flex items-center justify-center px-4">
+              <div className="text-center">
+                <div className="text-5xl md:text-6xl mb-3 md:mb-4">📭</div>
+                <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-2">No Messages Yet</h2>
+                <p className="text-sm md:text-base text-slate-600 max-w-md">
+                  This thread doesn't have any messages. Start a conversation by typing below.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* No thread selected state */}
+          {messages.length === 0 && !loading && !selectedThreadId && (
             <div className="h-full flex items-center justify-center px-4">
               <div className="text-center">
                 <div className="text-5xl md:text-6xl mb-3 md:mb-4">💬</div>
-                <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-2">Start a Conversation</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-2">Select a Thread</h2>
                 <p className="text-sm md:text-base text-slate-600 max-w-md">
-                  Ask me anything about enterprise search and get intelligent insights powered by AI.
+                  Choose a thread from the left sidebar to view messages or start a new conversation.
                 </p>
               </div>
             </div>
@@ -325,14 +426,32 @@ export default function Chat() {
             <ChatMessage key={i} sender={msg.sender} text={msg.text} />
           ))}
 
-          {/* Loading indicator */}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-blue-100 rounded-3xl px-5 py-3 message-bubble shadow-md">
+          {/* Loading state - shimmer animation for new thread loading */}
+          {loading && isNewThreadLoading && (
+            <div className="space-y-4 animate-pulse">
+              {[...Array(3)].map((_, i) => {
+                const isUserMessage = i % 2 === 0;
+                const widths = ['w-32', 'w-40', 'w-48'];
+                return (
+                  <div key={i} className={`flex ${isUserMessage ? 'justify-end' : 'justify-start'} px-2`}>
+                    <div className={`px-5 py-3 rounded-3xl max-w-xs ${isUserMessage ? 'bg-blue-200' : 'bg-slate-200'}`}>
+                      <div className={`h-4 ${isUserMessage ? 'bg-blue-300' : 'bg-slate-300'} rounded ${widths[i % 3]} mb-2`}></div>
+                      <div className={`h-4 ${isUserMessage ? 'bg-blue-300' : 'bg-slate-300'} rounded ${widths[(i + 1) % 3]}`}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Loading state - typing indicator for existing thread response */}
+          {loading && !isNewThreadLoading && (
+            <div className="w-full flex justify-start px-2">
+              <div className="bg-slate-100 rounded-3xl px-5 py-3 message-bubble shadow-xs hover:shadow-md border border-slate-200 rounded-bl-none">
                 <div className="typing-indicator flex space-x-2">
-                  <span className="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
-                  <span className="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
-                  <span className="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
+                  <span className="w-2.5 h-2.5 bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-2.5 h-2.5 bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-2.5 h-2.5 bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                 </div>
               </div>
             </div>
