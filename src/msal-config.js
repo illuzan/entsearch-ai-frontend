@@ -14,10 +14,5 @@ export const msalConfig = {
 
 // Scopes for the API
 export const loginRequest = {
-  scopes: ["User.Read"], // Basic user profile scope
-};
-
-// Scopes for the backend API
-export const apiRequest = {
-  scopes: ["api://badcff2b-632b-4a5b-ae01-af2c9243a164/access_as_user"], // Replace with your backend API scope
+  scopes: ["User.Read","api://badcff2b-632b-4a5b-ae01-af2c9243a164/access_as_user"], // Basic user profile scope
 };

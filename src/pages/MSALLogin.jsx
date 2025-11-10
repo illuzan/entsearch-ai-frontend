@@ -15,6 +15,14 @@ export default function MSALLogin() {
     }
   }, [accounts, navigate]);
 
+  const handleRedirect = () => {
+    instance
+      .loginPopup({
+        ...loginRequest,
+      })
+      .catch((error) => console.log(error));
+  };
+
   const handleLogin = async () => {
     try {
       const response = await instance.loginPopup(loginRequest);
@@ -48,7 +56,7 @@ export default function MSALLogin() {
 
         {/* Login Button */}
         <button
-          onClick={handleLogin}
+          onClick={handleRedirect}
           className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
         >
           <svg

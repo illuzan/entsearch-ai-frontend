@@ -1,5 +1,5 @@
-// src/api.js
 import axios from "axios";
+import { loginRequest } from "./msal-config";
 
 // Replace with your backend URL
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -19,29 +19,25 @@ export function setMsalInstance(instance) {
 api.interceptors.request.use(
   async (config) => {
     try {
-      // Get token from sessionStorage (set by MSAL)
-      let token = sessionStorage.getItem("msal_access_token");
+      const response = await msalInstance.acquireTokenSilent(loginRequest);
+      // Use the access token from response.accessToken
+      config.headers.Authorization = `Bearer ${response.accessToken}`;
 
-      // If no token or expired, try to refresh it
-      if (!token && msalInstance) {
-        try {
-          const response = await msalInstance.acquireTokenSilent({
-            scopes: ["api://badcff2b-632b-4a5b-ae01-af2c9243a164/access_as_user"],
-          });
-          token = response.accessToken;
-          sessionStorage.setItem("msal_access_token", token);
-        } catch (refreshError) {
-          console.error("Failed to refresh token:", refreshError);
-        }
-      }
-
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
     } catch (error) {
+      if (error instanceof msal.InteractionRequiredAuthError) {
+        // Silent acquisition failed, fall back to interactive method
+        msalInstance.loginPopup(loginRequest)
+          .then(response => {
+            config.headers.Authorization = `Bearer ${response.accessToken}`;
+          })
+          .catch(error => {
+            console.error(error);
+          });
+      } else {
+        console.error(error);
+      }
       console.error("Error adding token to request:", error);
     }
-
     return config;
   },
   (error) => {
